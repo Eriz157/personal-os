@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Files — Personal OS</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="pg-files" data-root="../" data-key="files">
+<main>
+  <section class="fl-hero">
+    <div class="spin" id="flSpin" aria-hidden="true"></div>
+    <p class="eyebrow" style="color:#fff" id="flEyebrow">Buku simpanan</p>
+    <h1 class="display h-xl">Catatan &amp; file</h1>
+    <p class="sub">Simpan catatan, tautan, dan dokumenmu di satu tempat.</p>
+    <div class="watermark" aria-hidden="true">FILES<span class="pill a">Notes</span><span class="pill b">PDF</span><span class="pill c">Ideas</span></div>
+  </section>
+  <section class="fl-tools">
+    <div class="row between"><div class="row"><input id="flq" type="search" placeholder="Cari nama atau catatan…" aria-label="Cari"></div><div class="row"><button class="btn ghost" id="flCat" type="button">Kategori</button><button class="btn" id="flAdd" type="button">Simpanan baru <span class="chip" id="flPlus"></span></button></div></div>
+    <div class="chips" id="flChips"></div>
+  </section>
+  <section class="fl-grid" id="flGrid"></section>
+</main>
+<script src="../assets/js/database.js"></script>
+<script src="../assets/js/main.js"></script>
+<script>
+(function () {
+  var A = App, DB = window.DB, U = A.U, $ = A.$, esc = A.esc, F = A.F, init = false, cat = '', q = '', urls = [];
+  var TILT = [-1.2, .8, -.6, 1.1, -.9, .5];
+  function note(n, i) {
+    var f = n.file, c = U.catColor(n.categoryId);
+    return '<article class="note" data-id="' + n.id + '" style="--cc:' + c + ';transform:rotate(' + TILT[i % 6] + 'deg)">' +
+      '<div class="row between" style="flex-wrap:nowrap"><span class="sticker" style="--bg:#fff">' + esc(U.catName(n.categoryId)) + '</span><div class="acts"><button class="iconbtn" data-a="edit" aria-label="Ubah">' + A.ico('edit', 16) + '</button><button class="iconbtn danger" data-a="del" aria-label="Hapus">' + A.ico('trash', 16) + '</button></div></div>' +
+      '<h3>' + esc(n.name) + '</h3>' + (f && /^image\//.test(f.type || '') ? '<div class="thumb" data-thumb="' + esc(f.id) + '"></div>' : '') +
+      (n.description ? '<div class="body">' + esc(n.description.length > 260 ? n.description.slice(0, 260) + '…' : n.description) + '</div>' : '') +
+      '<div class="foot2"><span>' + esc(U.short(n.uploaded_at || n.created_at)) + '</span>' + (f ? '<button class="btn sm plain light fchip" data-a="dl" type="button" title="Unduh">' + A.ico('file', 14) + ' ' + esc(U.ext(f.name)) + ' · ' + U.size(f.size) + ' ' + A.ico('dl', 14) + '</button>' : '<span>Catatan</span>') + '</div></article>';
+  }
+  function thumbs() {
+    urls.forEach(URL.revokeObjectURL); urls = [];
+    A.$$('[data-thumb]').forEach(function (el) {
+      var n = DB.find('notes', el.closest('.note').dataset.id); if (!n || !n.file) return;
+      DB.files.fetchBlob(n.file).then(function (b) { if (b) { var u = URL.createObjectURL(b); urls.push(u); el.style.backgroundImage = 'url("' + u + '")'; } }).catch(function () { });
+    });
+  }
+  function render() {
+    A.$('#flPlus').innerHTML = A.ico('plus', 20);
+    var all = DB.list('notes'), files = all.filter(function (n) { return n.file; }).length;
+    $('#flEyebrow').textContent = all.length + ' simpanan · ' + files + ' file';
+    $('#flSpin').innerHTML = U.badge('BUKU SIMPANAN · NOTES · FILES · IDEAS · ', 'bdgF', 'none', 'none', 'currentColor');
+    $('#flChips').innerHTML = [['', 'Semua']].concat(U.cats('note').map(function (c) { return [c.id, c.name]; })).map(function (c) { return '<button type="button" data-c="' + esc(c[0]) + '" class="' + (cat === c[0] ? 'on' : '') + '">' + (c[0] ? '<i style="background:' + U.catColor(c[0]) + '"></i>' : '') + esc(c[1]) + '</button>'; }).join('');
+    var list = all.filter(function (n) { return (!cat || n.categoryId === cat) && (!q || (n.name + ' ' + (n.description || '') + ' ' + (n.file ? n.file.name : '')).toLowerCase().indexOf(q.toLowerCase()) >= 0); }).sort(function (a, b) { return (b.uploaded_at || b.created_at) < (a.uploaded_at || a.created_at) ? -1 : 1; });
+    $('#flGrid').innerHTML = list.length ? list.map(note).join('') : '<div class="fl-empty"><b>' + (all.length ? 'Tidak ditemukan' : 'Belum ada simpanan') + '</b>' + (all.length ? 'Coba kata kunci atau kategori lain.' : 'Tambahkan catatan atau unggah file pertamamu.') + '</div>';
+    thumbs();
+  }
+  A.start(function () {
+    if (!init) {
+      init = true; $('#flAdd').onclick = function () { F.note(); }; $('#flCat').onclick = function () { F.categories('note', 'Kategori simpanan'); };
+      $('#flq').oninput = function () { q = this.value; render(); };
+      document.addEventListener('click', function (e) {
+        var c = e.target.closest('#flChips [data-c]'); if (c) { cat = c.dataset.c; render(); return; }
+        var b = e.target.closest('.note [data-a]'); if (!b) return; var id = b.closest('.note').dataset.id, n = DB.find('notes', id);
+        if (b.dataset.a === 'edit') F.note(n);
+        else if (b.dataset.a === 'del') A.UI.confirm('Hapus "' + n.name + '"' + (n.file ? ' beserta filenya' : '') + '?').then(function (y) { if (y) DB.remove('notes', id); });
+        else if (b.dataset.a === 'dl') DB.files.fetchBlob(n.file).then(function (bl) { if (bl) U.download(n.file.name, bl); else A.UI.toast('File belum tersedia di perangkat ini. Aktifkan sinkronisasi GitHub.', 'err'); }, function (er) { A.UI.toast(er.message || 'Gagal mengunduh', 'err'); });
+      });
+    }
+    render();
+  });
+})();
+</script>
+</body>
+</html>

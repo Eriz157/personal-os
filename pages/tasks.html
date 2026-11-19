@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tasks — Personal OS</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="pg-tasks" data-root="../" data-key="tasks">
+<main>
+  <section class="tk-hero">
+    <p class="eyebrow" id="tkEyebrow">Tugas</p>
+    <h1 class="display h-lg">Selesaikan satu per satu</h1>
+  </section>
+  <div class="tk-bar">
+    <div class="chips" id="tkFilter" role="group" aria-label="Filter"></div>
+    <button class="btn" id="tkAdd" type="button">Tugas baru <span class="chip" id="tkPlus"></span></button>
+  </div>
+  <section class="pri-grid" id="priGrid" aria-label="Tugas per prioritas"></section>
+  <details class="tk-done" id="tkDone"><summary id="tkDoneSum">Selesai</summary><div class="list" id="tkDoneList"></div></details>
+</main>
+<script src="../assets/js/database.js"></script>
+<script src="../assets/js/main.js"></script>
+<script>
+(function () {
+  var A = App, DB = window.DB, U = A.U, $ = A.$, esc = A.esc, PRI = A.PRI, F = A.F, filter = 'all';
+  var PC = { green: '#B0E5A8', yellow: '#EDE06E', red: '#F2887D', burgundy: '#7D2438' };
+  function item(t) {
+    var late = !t.done && t.date < U.today(), c = PC[t.priority] || PC.yellow;
+    return '<article class="tk ' + (t.done ? 'done' : '') + '" style="--pc:' + c + '" data-id="' + t.id + '">' +
+      '<button class="check" type="button" data-a="tog" aria-label="' + (t.done ? 'Tandai belum selesai' : 'Tandai selesai') + '">' + (t.done ? A.ico('check', 16, 3) : '') + '</button><b>' + esc(t.name) + '</b>' +
+      '<div class="acts"><button class="iconbtn" data-a="edit" aria-label="Ubah">' + A.ico('edit', 16) + '</button><button class="iconbtn danger" data-a="del" aria-label="Hapus">' + A.ico('trash', 16) + '</button></div>' +
+      '<div class="when"><span class="chipx ' + (late ? 'no' : 'wait') + '"><i></i>' + esc(U.short(t.date)) + (t.time ? ' · ' + esc(t.time) : '') + '</span><span class="hint">' + esc(t.done ? 'Selesai' : U.rel(t.date)) + '</span></div>' +
+      (t.description ? '<div class="desc">' + esc(t.description) + '</div>' : '') + '</article>';
+  }
+  function render() {
+    var all = DB.list('tasks'), t = U.today(), open = all.filter(function (x) { return !x.done; }), done = all.filter(function (x) { return x.done; });
+    $('#tkEyebrow').textContent = open.length + ' belum selesai · ' + open.filter(function (x) { return x.date < t; }).length + ' terlambat · ' + done.length + ' selesai';
+    $('#tkPlus').innerHTML = A.ico('plus', 20);
+    var fs = [['all', 'Semua'], ['today', 'Hari ini'], ['week', '7 hari'], ['late', 'Terlambat']];
+    $('#tkFilter').innerHTML = fs.map(function (f) { return '<button type="button" data-f="' + f[0] + '" class="' + (filter === f[0] ? 'on' : '') + '">' + f[1] + '</button>'; }).join('');
+    function ok(x) { return filter === 'all' || (filter === 'today' && x.date === t) || (filter === 'week' && x.date >= t && x.date <= U.addDays(t, 7)) || (filter === 'late' && x.date < t); }
+    $('#priGrid').innerHTML = A.PRI_ORDER.map(function (k, i) {
+      var list = open.filter(function (x) { return x.priority === k && ok(x); }).sort(A.S.byDeadline), p = PRI[k];
+      return '<div class="pri-col pri-' + k + '"><div class="pri-ic">' + list.length + '</div><h2>' + p.label + ' · ' + p.sub + '</h2><p>' + p.desc + '</p>' +
+        (list.length ? list.map(item).join('') : '<div class="empty" style="padding:20px 10px"><span class="hint">Kosong</span></div>') + '</div>';
+    }).join('');
+    $('#tkDoneSum').textContent = 'Selesai (' + done.length + ')';
+    $('#tkDoneList').innerHTML = done.sort(function (a, b) { return (b.done_at || '') < (a.done_at || '') ? -1 : 1; }).map(item).join('') || '<div class="hint">Belum ada.</div>';
+  }
+  A.start(function () {
+    if (!window._tkInit) {
+      window._tkInit = 1;
+      $('#tkAdd').onclick = function () { F.task(); };
+      document.addEventListener('click', function (e) {
+        var f = e.target.closest('[data-f]'); if (f) { filter = f.dataset.f; render(); return; }
+        var b = e.target.closest('[data-a]'); if (!b) return; var id = b.closest('.tk').dataset.id, t = DB.find('tasks', id);
+        if (b.dataset.a === 'tog') DB.update('tasks', id, { done: !t.done, done_at: t.done ? null : DB.localDT(new Date()) });
+        else if (b.dataset.a === 'edit') F.task(t);
+        else A.UI.confirm('Hapus tugas "' + t.name + '"?').then(function (y) { if (y) DB.remove('tasks', id); });
+      });
+    }
+    render();
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personal OS — Hidupmu, tertata</title>
+<meta name="description" content="Dashboard pribadi: tugas, keuangan, habit, dan catatan dalam satu tempat.">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="pg-dash" data-root="" data-key="dash">
+<main id="main">
+  <section class="hero">
+    <svg class="star" style="left:6%;top:18%;width:84px;--rot:20deg" viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,2 61,38 98,38 68,60 79,96 50,74 21,96 32,60 2,38 39,38" fill="#EDE06E" stroke="#1B1B1B" stroke-width="1.6" stroke-linejoin="round"/></svg>
+    <svg class="star" style="left:14%;bottom:30%;width:56px;--rot:-18deg;animation-delay:-2s" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="46" fill="#B0E5A8" stroke="#1B1B1B" stroke-width="1.6"/></svg>
+    <a class="badge-spin" href="pages/tasks.html" aria-label="Lihat tugas">
+      <script>document.write('')</script>
+      <span class="core" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></span>
+    </a>
+    <div class="hero-inner">
+      <p class="eyebrow" id="heroEyebrow">Personal OS</p>
+      <h1 class="display h-xl">Hidupmu,<br>tertata rapi</h1>
+      <div class="hero-actions">
+        <button class="btn" data-add="task">Tugas baru <span class="chip"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        <button class="btn light" data-add="tx">Catat transaksi <span class="chip"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        <a class="btn ghost" href="#ringkasan">Ringkasan aktivitas</a>
+      </div>
+      <p class="hint" id="emptyHint" hidden style="margin-top:22px">Masih kosong. <button class="btn sm plain light" id="demoBtn" type="button">Isi data contoh</button> atau mulai dari tombol di atas.</p>
+    </div>
+    <div class="hero-tiles" id="heroTiles"></div>
+  </section>
+
+  <section class="showcase" id="ringkasan" aria-label="Ringkasan aktivitas">
+    <div class="showcase-head">
+      <div>
+        <p class="eyebrow">Ringkasan aktivitas</p>
+        <h2 class="display h-lg">Belum selesai</h2>
+      </div>
+      <p class="muted" id="dsCount" style="font-weight:700;text-transform:uppercase"></p>
+    </div>
+    <div class="ds" id="ds">
+      <div class="ds-viewport" tabindex="0" aria-label="Daftar aktivitas, geser atau gunakan tombol panah"><div class="ds-track"></div></div>
+      <div class="ds-ui">
+        <div class="ds-progress"><i></i></div>
+        <span class="ds-hint">Geser →</span>
+        <span class="ds-count">00 / 00</span>
+        <div class="ds-nav"><button type="button" data-prev aria-label="Sebelumnya"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H5M11 6l-6 6 6 6"/></svg></button><button type="button" data-next aria-label="Berikutnya"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></svg></button></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wrap" aria-label="Hari ini">
+    <div class="row between" style="margin-bottom:18px"><h2 class="display h-md">Hari ini</h2><button class="btn plain light" id="dataBtn" type="button">Data &amp; sinkron</button></div>
+    <div class="today-grid" id="today"></div>
+  </section>
+</main>
+
+<footer class="foot">
+  <h2 class="display h-lg">Satu tempat untuk semuanya</h2>
+  <p class="sub">Data tersimpan di perangkatmu dan bisa disinkronkan lewat GitHub.</p>
+  <div class="watermark" aria-hidden="true">OS<span class="pill a">Tasks</span><span class="pill b">Habits</span></div>
+  <div class="bar"><span>© Personal OS</span><a href="#main">Kembali ke atas ↑</a></div>
+</footer>
+<div class="drag-cursor" aria-hidden="true"><span>DRAG</span></div>
+
+<script src="assets/js/database.js"></script>
+<script src="assets/js/main.js"></script>
+<script>
+/* badge berputar: teks melingkar */
+(function(){var a=document.querySelector('.badge-spin');var s=document.createElement('div');s.innerHTML=App.U.badge('PERSONAL OS · TASKS · FINANCE · HABITS · FILES · ','bdg','#fff','#1B1B1B');a.insertBefore(s.firstChild,a.firstChild);var d=a.querySelector('script');if(d)d.remove();})();
+</script>
+<script src="assets/js/dashboard.js"></script>
+</body>
+</html>

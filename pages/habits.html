@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Habits — Personal OS</title>
+<link rel="stylesheet" href="../assets/css/style.css">
+</head>
+<body class="pg-hab" data-root="../" data-key="hab">
+<main>
+  <section class="hab-hero">
+    <p class="eyebrow">Kebiasaan &amp; jadwal aktivitas</p>
+    <h1 class="display h-xl">Konsisten<br>tiap hari</h1>
+    <p>Centang aktivitas yang sudah dilakukan. Streak dihitung dari hari berturut-turut dengan minimal satu aktivitas selesai.</p>
+    <div class="hero-actions" style="display:flex;gap:12px;justify-content:center;margin-top:24px;flex-wrap:wrap"><button class="btn" id="hAdd" type="button">Aktivitas baru <span class="chip" data-i="plus"></span></button><button class="btn light" id="hCat" type="button">Kelola kategori</button></div>
+  </section>
+  <section class="hab-three" id="hThree"></section>
+  <section class="hab-mini" id="hMini"></section>
+
+  <section class="hab-body">
+    <div class="row between" style="margin-bottom:18px"><h2 class="display h-md">Aktivitas 20 minggu terakhir</h2><span class="hint" id="heatLegend">Makin hijau = makin banyak aktivitas selesai</span></div>
+    <div class="heat" id="heat" role="img" aria-label="Peta aktivitas harian"></div>
+    <div class="row between" style="margin:44px 0 16px"><h2 class="display h-md">Jadwal</h2><div class="chips" id="hChips"></div></div>
+    <div id="hList"></div>
+  </section>
+</main>
+<script src="../assets/js/database.js"></script>
+<script src="../assets/js/main.js"></script>
+<script>
+(function () {
+  var A = App, DB = window.DB, U = A.U, $ = A.$, esc = A.esc, F = A.F, init = false, cat = '', scope = 'upcoming';
+  var BG = ['var(--lav)', 'var(--yel)', 'var(--pch)'];
+  function stats() {
+    var hs = DB.list('habits'), t = U.today(), st = A.S.streak(), done = hs.filter(function (h) { return h.done; });
+    var w0 = U.addDays(t, -6), wk = hs.filter(function (h) { return h.date >= w0 && h.date <= t; }), wkDone = wk.filter(function (h) { return h.done; });
+    return { st: st, total: hs.length, done: done.length, week: wk.length ? Math.round(wkDone.length / wk.length * 100) : 0, today: hs.filter(function (h) { return h.date === t; }), up: hs.filter(function (h) { return !h.done && h.date >= t; }).length };
+  }
+  function item(h) {
+    return '<article class="hb ' + (h.done ? 'done' : '') + '" style="--cc:' + U.catColor(h.categoryId) + '" data-id="' + h.id + '"><button class="check" type="button" data-a="tog" aria-label="' + (h.done ? 'Batalkan' : 'Tandai selesai') + '">' + A.ico('check', 16, 3) + '</button><b>' + esc(h.name) + '</b><div class="acts"><button class="iconbtn" data-a="edit" aria-label="Ubah">' + A.ico('edit', 16) + '</button><button class="iconbtn danger" data-a="del" aria-label="Hapus">' + A.ico('trash', 16) + '</button></div><div class="meta"><span class="sticker" style="--bg:' + U.catColor(h.categoryId) + '">' + esc(U.catName(h.categoryId)) + '</span>' + (h.series ? '<span class="hint">berulang</span>' : '') + '</div>' + (h.description ? '<p class="desc">' + esc(h.description) + '</p>' : '') + '</article>';
+  }
+  function render() {
+    A.$$('[data-i]').forEach(function (e) { e.innerHTML = A.ico(e.dataset.i, 20); });
+    var s = stats(), t = U.today();
+    $('#hThree').innerHTML = [['01', s.done, 'Total sesi', 'dari ' + s.total + ' aktivitas tercatat', 'var(--lav)'], ['02', s.st.current, 'Streak hari', s.st.todayDone ? 'Hari ini sudah tercatat 🔥' : (s.st.current ? 'Selesaikan satu aktivitas hari ini agar tidak putus' : 'Mulai hari ini!'), 'var(--yel)'], ['03', s.st.best, 'Streak terbaik', 'dalam ' + s.st.days + ' hari aktif', 'var(--grn)']]
+      .map(function (x) { return '<div class="frame hab-stat"><div class="inner" style="background:' + x[4] + '"><span class="no">' + x[0] + '</span><div><div class="val">' + x[1] + '</div><div class="lab">' + x[2] + '</div><div class="sub">' + esc(x[3]) + '</div></div></div></div>'; }).join('');
+    $('#hMini').innerHTML = [['Selesai 7 hari terakhir', s.week + '%'], ['Hari ini', s.today.filter(function (h) { return h.done; }).length + '/' + s.today.length], ['Akan datang', s.up], ['Hari aktif', s.st.days]].map(function (x) { return '<div class="tile"><div class="n">' + x[1] + '</div><div class="l">' + x[0] + '</div></div>'; }).join('');
+    /* heatmap: 20 minggu, kolom = minggu (Sen–Min) */
+    var days = A.S.habitDays(), end = new Date(U.parse(t)), dow = (end.getDay() + 6) % 7, cells = '', start = U.addDays(t, -(19 * 7 + dow));
+    for (var i = 0; i < 20 * 7; i++) { var d = U.addDays(start, i); if (d > t) break; var n = days[d] || 0; cells += '<i data-l="' + (n ? Math.min(3, n) : 0) + '" class="' + (d === t ? 'today' : '') + '" title="' + esc(U.long(d)) + ' — ' + n + ' selesai"></i>'; }
+    $('#heat').innerHTML = cells;
+    $('#hChips').innerHTML = [['upcoming', 'Mendatang'], ['done', 'Selesai'], ['all', 'Semua']].map(function (x) { return '<button type="button" data-s="' + x[0] + '" class="' + (scope === x[0] ? 'on' : '') + '">' + x[1] + '</button>'; }).join('') + '<span style="width:12px"></span>' + [['', 'Semua kategori']].concat(U.cats('habit').map(function (c) { return [c.id, c.name]; })).map(function (c) { return '<button type="button" data-c="' + esc(c[0]) + '" class="' + (cat === c[0] ? 'on' : '') + '">' + (c[0] ? '<i style="background:' + U.catColor(c[0]) + '"></i>' : '') + esc(c[1]) + '</button>'; }).join('');
+    var list = DB.list('habits').filter(function (h) { return (!cat || h.categoryId === cat) && (scope === 'all' || (scope === 'done' ? h.done : !h.done)); });
+    var by = {}; list.forEach(function (h) { (by[h.date] = by[h.date] || []).push(h); });
+    var keys = Object.keys(by).sort(); if (scope !== 'upcoming') keys.reverse();
+    $('#hList').innerHTML = keys.length ? keys.map(function (k) { var late = k < t && by[k].some(function (h) { return !h.done; }); return '<div class="hb-day"><h4>' + U.dayName(k) + '<small>' + U.dmy(k) + ' · ' + esc(U.rel(k)) + (late ? ' ⚠' : '') + '</small></h4><div class="hb-items">' + by[k].map(item).join('') + '</div></div>'; }).join('') : '<div class="empty"><b>Belum ada aktivitas</b>Tambahkan jadwal pertamamu lewat tombol di atas.</div>';
+  }
+  A.start(function () {
+    if (!init) {
+      init = true; $('#hAdd').onclick = function () { F.habit(); }; $('#hCat').onclick = function () { F.categories('habit', 'Kategori aktivitas'); };
+      document.addEventListener('click', function (e) {
+        var c = e.target.closest('#hChips [data-c]'), s = e.target.closest('#hChips [data-s]'); if (c) { cat = c.dataset.c; render(); return; } if (s) { scope = s.dataset.s; render(); return; }
+        var b = e.target.closest('.hb [data-a]'); if (!b) return; var id = b.closest('.hb').dataset.id, h = DB.find('habits', id);
+        if (b.dataset.a === 'tog') DB.update('habits', id, { done: !h.done, done_at: h.done ? null : DB.localDT(new Date()) });
+        else if (b.dataset.a === 'edit') F.habit(h); else A.UI.confirm('Hapus aktivitas ini?').then(function (y) { if (y) DB.remove('habits', id); });
+      });
+    }
+    render();
+  });
+})();
+</script>
+</body>
+</html>
